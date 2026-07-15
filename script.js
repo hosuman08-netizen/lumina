@@ -143,9 +143,9 @@ function renderFeed() {
       <div class="price">${item.price} EDEN</div>
       ${item.coCreator ? `<div style="font-size:9px;opacity:0.6">Co-signed: ${item.coCreator}</div>` : ''}
       ${item.owner ? `<div style="font-size:10px;opacity:0.5">Owned by ${item.owner}</div>` : ''}
-      ${!item.owner ? `<button onclick="buyContent(${item.id})">Buy & Unlock (p6 Eye)</button>` : ''}
+      ${!item.owner ? `<button onclick="buyContent(${item.id})" class="primary">Buy & Unlock</button>` : ''}
       <div class="eye-hint">p6</div>
-      ${item.owner ? `<button onclick="playVoiceEmbodiment(${item.id})" style="font-size:9px">▶ Eye Embodiment</button>` : ''}
+      ${item.owner ? `<button onclick="playVoiceEmbodiment(${item.id})" class="ghost">Eye Embodiment</button>` : ''}
     `;
     grid.appendChild(card);
   });
@@ -154,15 +154,24 @@ function renderFeed() {
 function showFeed() {
   hideSections();
   document.getElementById('feed').classList.remove('hidden');
+  setActiveNav(0);
 }
 
 function showCreate() {
   hideSections();
   document.getElementById('create').classList.remove('hidden');
+  setActiveNav(1);
 }
 
 function hideSections() {
   document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+}
+
+// Reflect the current view on the nav (SENSE: consistency + live feedback)
+function setActiveNav(index) {
+  document.querySelectorAll('.nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === index);
+  });
 }
 
 function recordP6Voice() {
@@ -304,8 +313,8 @@ function renderDrops() {
       <h3>${drop.title}</h3>
       <div class="price">${drop.price} EDEN</div>
       <div class="fomo">${drop.left} remaining • ends soon</div>
-      <button onclick="claimDrop(${drop.id})">Claim (FOMO)</button>
-      <div class="eye-hint">👁 ${drop.surprise}</div>
+      <button onclick="claimDrop(${drop.id})" class="primary">Claim</button>
+      <div class="eye-hint">Surprise ${drop.surprise}</div>
     `;
     container.appendChild(el);
   });
@@ -314,6 +323,7 @@ function renderDrops() {
 function showDrops() {
   hideSections();
   document.getElementById('drops').classList.remove('hidden');
+  setActiveNav(2);
 }
 
 function claimDrop(id) {
@@ -351,6 +361,7 @@ function showCodex() {
   hideSections();
   const sec = document.getElementById('codex');
   sec.classList.remove('hidden');
+  setActiveNav(3);
   
   const list = document.getElementById('codex-list');
   list.innerHTML = '';

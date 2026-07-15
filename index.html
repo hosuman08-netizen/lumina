@@ -16,18 +16,20 @@
       <p class="tagline">Web3 Sensual Art • Voice as Breath • Limited Drops</p>
       
       <div class="wallet">
-        <button onclick="connectWallet()">🔗 Connect Wallet</button>
+        <button onclick="connectWallet()" class="primary">Connect Wallet</button>
         <div id="wallet-info">Not connected • 0 EDEN</div>
-        <button onclick="convertP7ToEDEN()" style="font-size:10px">p7 Ache→EDEN Vault</button>
-        <button onclick="playEmbodiment()" style="font-size:10px">Play Lung Eye</button>
+      </div>
+      <div class="wallet-utils">
+        <button onclick="convertP7ToEDEN()" class="ghost">p7 Ache → EDEN Vault</button>
+        <button onclick="playEmbodiment()" class="ghost">Play Lung Eye</button>
       </div>
       
-      <div class="nav">
-        <button onclick="showFeed()">🖼️ Feed</button>
-        <button onclick="showCreate()">🎙️ Create (p6 Voice)</button>
-        <button onclick="showDrops()">🔥 FOMO Drops</button>
-        <button onclick="showCodex()">📓 Codex (ALWAYS)</button>
-      </div>
+      <nav class="nav">
+        <button onclick="showFeed()" class="nav-btn active">Feed</button>
+        <button onclick="showCreate()" class="nav-btn">Create</button>
+        <button onclick="showDrops()" class="nav-btn">Drops</button>
+        <button onclick="showCodex()" class="nav-btn">Codex</button>
+      </nav>
     </header>
 
     <!-- Feed -->
