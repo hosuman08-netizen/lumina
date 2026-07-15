@@ -73,6 +73,20 @@ button.ghost:hover { color: var(--gold); }
 
 .fomo { color: #f87171; font-size: 11px; }
 
+/* Vault summary — the "own" payoff made visible */
+.vault-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 20px;
+}
+.vault-stat {
+  background: var(--card); border: 1px solid #3a3124; border-radius: 10px;
+  padding: 12px 8px; text-align: center;
+}
+.vault-stat span { display: block; font-size: 22px; font-weight: 600; color: var(--gold); line-height: 1; }
+.vault-stat label { display: block; font-size: 10px; color: var(--dim); margin-top: 6px; letter-spacing: 0.4px; }
+.vault-summary button { grid-column: 1 / -1; }
+@media (max-width: 360px) { .vault-summary { grid-template-columns: repeat(2, 1fr); } }
+
 .codex-entry {
   background: var(--card); border: 1px solid #3a3124; padding: 10px; border-radius: 8px; margin: 8px 0;
   font-size: 13px;

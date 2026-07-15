@@ -28,6 +28,7 @@
         <button onclick="showFeed()" class="nav-btn active">Feed</button>
         <button onclick="showCreate()" class="nav-btn">Create</button>
         <button onclick="showDrops()" class="nav-btn">Drops</button>
+        <button onclick="showVault()" class="nav-btn">Vault</button>
         <button onclick="showCodex()" class="nav-btn">Codex</button>
       </nav>
     </header>
@@ -71,6 +72,13 @@
     <div id="drops" class="section hidden">
       <h2>Limited Eden Drops <span class="fomo">3 left today</span></h2>
       <div id="drop-list"></div>
+    </div>
+
+    <!-- Vault (owned collection + resale) -->
+    <div id="vault" class="section hidden">
+      <h2>🗝 My Vault</h2>
+      <div id="vault-summary" class="vault-summary"></div>
+      <div id="vault-list" class="feed-grid"></div>
     </div>
 
     <!-- Codex -->
