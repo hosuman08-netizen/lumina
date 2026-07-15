@@ -1,0 +1,9 @@
+{
+  "name": "Eden Web3",
+  "short_name": "Eden",
+  "description": "Web3 Artistic Adult Content. Fictional only. 18+.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0806",
+  "theme_color": "#c5a46e"
+}

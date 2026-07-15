@@ -1,0 +1,62 @@
+/* p8 Eden Web3 — Da Vinci Sfumato + Full Cheat sensual */
+:root {
+  --bg: #0a0806;
+  --gold: #c5a46e;
+  --accent: #f5d76e;
+  --card: #12100d;
+  --text: #f5f1e6;
+  --dim: #8b6f47;
+}
+
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin:0; padding:0; }
+.container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+h1 { font-size: 36px; letter-spacing: -2px; color: var(--gold); }
+.tagline { color: var(--dim); }
+
+.disclaimer { font-size: 9px; opacity: 0.5; text-align: center; margin-bottom: 8px; letter-spacing: 0.5px; }
+
+.wallet { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+#wallet-info { font-family: monospace; font-size: 12px; background: var(--card); padding: 4px 8px; border-radius: 4px; }
+
+.nav { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+button { background: var(--card); color: var(--gold); border: 1px solid #3a3124; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+button.primary { background: var(--gold); color: #0a0806; font-weight: 600; }
+button:hover { border-color: var(--gold); }
+
+.section { margin-bottom: 24px; }
+.hidden { display: none; }
+
+.feed-grid, .drop-grid { display: grid; gap: 12px; }
+.card {
+  background: var(--card);
+  border: 1px solid #3a3124;
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+}
+.card.sfu { filter: blur(0.4px) contrast(1.05); } /* sfumato */
+.card .meta { font-size: 11px; color: var(--dim); margin-bottom: 6px; }
+.card .intensity { color: var(--accent); font-size: 12px; }
+.card .price { color: var(--gold); font-weight: 600; }
+.card button { margin-top: 8px; width: 100%; }
+
+.form label { display: block; font-size: 12px; color: var(--dim); margin: 10px 0 4px; }
+.form input, .form button { width: 100%; margin-bottom: 8px; }
+
+.fomo { color: #f87171; font-size: 11px; }
+
+.codex-entry {
+  background: var(--card); border: 1px solid #3a3124; padding: 10px; border-radius: 8px; margin: 8px 0;
+  font-size: 13px;
+}
+
+/* Da Vinci anatomy hint */
+.eye-hint { position: absolute; top: 10px; right: 10px; font-size: 10px; opacity: 0.6; color: #f5d76e; }
+
+/* p8 births: living rarity, co-sig, lung embodiment */
+.rarity-living { transition: filter 0.3s, box-shadow 0.3s; }
+.rarity-living:hover { filter: contrast(1.2) saturate(1.1); box-shadow: 0 0 12px rgba(197,164,110,0.5); }
+.co-signature { font-size: 9px; opacity: 0.7; border-top: 1px dotted #3a3124; padding-top: 4px; margin-top: 4px; }
+.lung-embodiment { position: relative; }
+.lung-embodiment::after { content: '👁'; position: absolute; top: -4px; right: -4px; font-size: 14px; color: #f5d76e; opacity: 0.8; }
