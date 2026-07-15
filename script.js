@@ -33,21 +33,55 @@ function mutateLivingRarity(item) {
   return item;
 }
 
+// Real p6 golden-eye overlay — draws the actual p6 Lung Surprise Eye on a canvas.
+// Used by both the header "Play Lung Eye" and per-card "Eye Embodiment".
+function openEyeOverlay(surprise, title) {
+  const s = Math.max(0, Math.min(0.99, surprise || 0.5));
+  const overlay = document.createElement('div');
+  overlay.className = 'eye-overlay';
+  overlay.innerHTML = `
+    <div class="eye-stage">
+      <canvas width="320" height="200"></canvas>
+      <div class="eye-caption">${title ? title + ' — ' : ''}Surprise ${s.toFixed(2)}</div>
+    </div>`;
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+
+  const canvas = overlay.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+  const draw = () => {
+    if (!overlay.isConnected) return;
+    ctx.clearRect(0, 0, 320, 200);
+    // breathing amplitude drives the eye — the "predimment" build-up
+    const amp = 0.4 + 0.35 * Math.sin(t / 12);
+    if (window.p6LungSurpriseEye) {
+      window.p6LungSurpriseEye(ctx, 320, 100, s, amp, 0.6, window._p8Ache || 0);
+    } else {
+      // graceful fallback: a simple golden iris pulse
+      const r = 30 + amp * 22;
+      const g = ctx.createRadialGradient(160, 100, 4, 160, 100, r);
+      g.addColorStop(0, '#f5d76e'); g.addColorStop(1, 'rgba(197,164,110,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(160, 100, r, 0, Math.PI * 2); ctx.fill();
+    }
+    t++;
+    if (t < 150) requestAnimationFrame(draw); // ~2.5s ritual
+    else setTimeout(() => overlay.remove(), 400);
+  };
+  requestAnimationFrame(draw);
+}
+
+// Header "Play Lung Eye" — was an undefined dead button. Now real.
+function playEmbodiment() {
+  let surprise = window._p8Surprise;
+  if (window.getP6LungSurprise) surprise = window.getP6LungSurprise() || surprise;
+  openEyeOverlay(surprise || 0.5, 'Lung Embodiment');
+}
+
 function playVoiceEmbodiment(id) {
   const item = content.find(c => c.id === id);
   if (!item) return;
-  // direct p6 eye overlay + embodiment
-  const preview = document.createElement('div');
-  preview.innerHTML = `Playing ${item.title} — p6 Lung Eye embodiment`;
-  document.body.appendChild(preview);
-  if (window.p6LungSurpriseEye) {
-    // mock canvas draw
-    console.log('p6 eye drawing for embodiment', item.surprise);
-  }
-  setTimeout(() => {
-    alert(`Embodiment triggered. Physical ache → art value +${(item.surprise*10).toFixed(0)}`);
-    preview.remove();
-  }, 1200);
+  openEyeOverlay(item.surprise, item.title);
 }
 
 function initP8() {
@@ -160,6 +194,7 @@ function recordP6Voice() {
       
       stream.getTracks().forEach(t => t.stop());
     };
+    window._recStart = Date.now(); // real ache proxy: how long the breath is held
     recorder.start();
     setTimeout(() => recorder.stop(), 4200); // ~4s
   }).catch(() => {
