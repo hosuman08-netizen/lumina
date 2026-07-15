@@ -4,7 +4,11 @@ let wallet = null;
 let edenBalance = 120;
 let content = JSON.parse(localStorage.getItem('p8_content') || '[]');
 let codex = JSON.parse(localStorage.getItem('p8_codex') || '[]');
-let drops = [];
+let drops = JSON.parse(localStorage.getItem('p8_drops') || '[]');
+
+// Persist remaining drop stock so "N remaining" is TRUE across refreshes
+// (real scarcity — displayed count === code count, no refresh exploit).
+function saveDrops() { localStorage.setItem('p8_drops', JSON.stringify(drops)); }
 
 const p3Companions = ['Luna Whisper', 'Vesper Veil', 'Echo Thorn']; // p3 cross
 
@@ -93,11 +97,14 @@ function initP8() {
     localStorage.setItem('p8_content', JSON.stringify(content));
   }
   
-  // Seed FOMO drops
-  drops = [
-    { id: 99, title: "Genesis Breath", price: 12, left: 3, surprise: 0.81 },
-    { id: 100, title: "Anatomy of Night", price: 28, left: 1, surprise: 0.55 }
-  ];
+  // Seed FOMO drops ONCE, then persist remaining stock (no refresh-to-refill exploit)
+  if (drops.length === 0) {
+    drops = [
+      { id: 99, title: "Genesis Breath", price: 12, left: 3, total: 3, surprise: 0.81 },
+      { id: 100, title: "Anatomy of Night", price: 28, left: 1, total: 1, surprise: 0.55 }
+    ];
+    saveDrops();
+  }
   
   renderFeed();
   updateWalletUI();
@@ -132,20 +139,33 @@ function renderFeed() {
   if (!grid) return;
   grid.innerHTML = '';
   
-  content.forEach(item => {
+  // Primary (unowned) first, then resale listings; owned-and-not-listed are hidden
+  // from the market feed (they live in your Vault).
+  const marketItems = content.filter(item => !item.owner || item.forSale);
+
+  if (marketItems.length === 0) {
+    grid.innerHTML = '<p style="color:var(--dim)">Nothing on the market. Mint in Create, or check Drops.</p>';
+    return;
+  }
+
+  marketItems.forEach(item => {
+    const isResale = !!item.forSale;
+    const mine = item.owner === wallet;
+    const price = isResale ? item.listPrice : item.price;
     const card = document.createElement('div');
     card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
     card.innerHTML = `
-      <div class="meta">ART • ${item.intensity.toFixed(2)} intensity</div>
+      <div class="meta">${isResale ? 'RESALE' : 'ART'} • ${item.intensity.toFixed(2)} intensity</div>
       <h3>${item.title}</h3>
       <p>${item.desc}</p>
       <div class="intensity">👁 Surprise: ${item.surprise?.toFixed(2) || '0.3'} ${item.rarity ? `· Living Rarity ${item.rarity}` : ''}</div>
-      <div class="price">${item.price} EDEN</div>
+      <div class="price">${price} EDEN</div>
       ${item.coCreator ? `<div style="font-size:9px;opacity:0.6">Co-signed: ${item.coCreator}</div>` : ''}
-      ${item.owner ? `<div style="font-size:10px;opacity:0.5">Owned by ${item.owner}</div>` : ''}
-      ${!item.owner ? `<button onclick="buyContent(${item.id})" class="primary">Buy & Unlock</button>` : ''}
+      ${isResale ? `<div style="font-size:10px;opacity:0.5">Listed by ${mine ? 'you' : item.seller}</div>` : ''}
+      ${mine
+        ? `<button class="ghost" disabled style="opacity:0.5;cursor:not-allowed">Your listing</button>`
+        : `<button onclick="buyContent(${item.id})" class="primary">${isResale ? 'Buy Resale' : 'Buy & Unlock'}</button>`}
       <div class="eye-hint">p6</div>
-      ${item.owner ? `<button onclick="playVoiceEmbodiment(${item.id})" class="ghost">Eye Embodiment</button>` : ''}
     `;
     grid.appendChild(card);
   });
@@ -267,25 +287,48 @@ function createAndMint() {
 
 function buyContent(id) {
   const item = content.find(c => c.id === id);
-  if (!item || item.owner) return;
-  
+  if (!item) return;
+
+  const isResale = !!item.forSale;
+  // Primary sale: must be unowned. Resale: must be listed and not already yours.
+  if (!isResale && item.owner) return;
+  if (isResale && item.owner === wallet) return;
+
   if (!wallet) {
     alert('Connect wallet');
     return;
   }
-  if (edenBalance < item.price) {
+
+  const cost = isResale ? item.listPrice : item.price;
+  if (edenBalance < cost) {
     alert('Insufficient EDEN. Limited drops create urgency.');
     return;
   }
-  
-  edenBalance -= item.price;
-  item.owner = wallet;
+
+  edenBalance -= cost;
+
+  if (isResale) {
+    // Resale transfer: seller receives EDEN, buyer takes ownership, listing clears.
+    // (Single-device demo: seller credit is recorded but paid to the same balance
+    // only if the seller is the active wallet — otherwise held as pending.)
+    const paidTitle = item.title;
+    const seller = item.seller;
+    delete item.forSale;
+    delete item.seller;
+    item.price = item.listPrice; // last-traded price becomes the new floor
+    delete item.listPrice;
+    item.owner = wallet;
+    recordSellerProceeds(seller, cost, paidTitle);
+  } else {
+    item.owner = wallet;
+  }
+
   mutateLivingRarity(item);
   localStorage.setItem('p8_content', JSON.stringify(content));
-  
+
   updateWalletUI();
   renderFeed();
-  
+
   // ALWAYS LEARNING + living mutate
   setTimeout(() => {
     const reflect = confirm(`Unlocked "${item.title}" (rarity now ${item.rarity}). What did you feel? Add to Codex?`);
@@ -308,12 +351,16 @@ function renderDrops() {
   drops.forEach(drop => {
     const el = document.createElement('div');
     el.className = 'card';
+    const soldOut = drop.left <= 0;
+    const claimed = (drop.total || 0) - drop.left;
     el.innerHTML = `
-      <div class="meta">LIMITED DROP</div>
+      <div class="meta">LIMITED DROP${drop.total ? ` • ${claimed}/${drop.total} minted` : ''}</div>
       <h3>${drop.title}</h3>
       <div class="price">${drop.price} EDEN</div>
-      <div class="fomo">${drop.left} remaining • ends soon</div>
-      <button onclick="claimDrop(${drop.id})" class="primary">Claim</button>
+      <div class="fomo">${soldOut ? 'SOLD OUT' : `${drop.left} remaining • ends soon`}</div>
+      ${soldOut
+        ? `<button class="ghost" disabled style="opacity:0.5;cursor:not-allowed">Sold Out</button>`
+        : `<button onclick="claimDrop(${drop.id})" class="primary">Claim</button>`}
       <div class="eye-hint">Surprise ${drop.surprise}</div>
     `;
     container.appendChild(el);
@@ -337,6 +384,7 @@ function claimDrop(id) {
   
   edenBalance -= drop.price;
   drop.left--;
+  saveDrops();
   updateWalletUI();
   
   const newNFT = {
@@ -357,11 +405,127 @@ function claimDrop(id) {
   renderDrops();
 }
 
+// ── Vault: the real "own" payoff + resale market loop ──────────────
+// Owning now means: a portfolio you can see, value, and RE-LIST for sale.
+// buy → own → list → someone buys → they own. A real market, not a dead-end.
+
+function ownedByMe() {
+  if (!wallet) return [];
+  return content.filter(c => c.owner === wallet);
+}
+
+// Seller proceeds ledger (per wallet address). On a single device the seller is
+// usually offline, so EDEN is escrowed to their address and claimable when that
+// wallet reconnects — a real, honest transfer of value, not a fake number.
+let proceeds = JSON.parse(localStorage.getItem('p8_proceeds') || '{}');
+
+function recordSellerProceeds(seller, amount, title) {
+  if (!seller || !amount) return;
+  proceeds[seller] = (proceeds[seller] || 0) + amount;
+  localStorage.setItem('p8_proceeds', JSON.stringify(proceeds));
+  // If the seller happens to be the active wallet, pay immediately.
+  if (seller === wallet) claimProceeds(true);
+}
+
+function claimProceeds(silent) {
+  if (!wallet) return;
+  const owed = proceeds[wallet] || 0;
+  if (owed <= 0) { if (!silent) alert('No resale proceeds to claim.'); return; }
+  edenBalance += owed;
+  proceeds[wallet] = 0;
+  localStorage.setItem('p8_proceeds', JSON.stringify(proceeds));
+  updateWalletUI();
+  renderVault();
+  if (!silent) alert(`Claimed ${owed} EDEN in resale proceeds.`);
+}
+
+function showVault() {
+  hideSections();
+  document.getElementById('vault').classList.remove('hidden');
+  setActiveNav(3);
+  renderVault();
+}
+
+function renderVault() {
+  const summary = document.getElementById('vault-summary');
+  const list = document.getElementById('vault-list');
+  if (!summary || !list) return;
+
+  if (!wallet) {
+    summary.innerHTML = '<p style="color:var(--dim)">Connect your wallet to see the pieces you own.</p>';
+    list.innerHTML = '';
+    return;
+  }
+
+  const mine = ownedByMe();
+  const totalValue = mine.reduce((s, c) => s + (c.price || 0), 0);
+  const totalRarity = mine.reduce((s, c) => s + (c.rarity || 0), 0);
+  const listedCount = mine.filter(c => c.forSale).length;
+  const owed = proceeds[wallet] || 0;
+
+  summary.innerHTML = `
+    <div class="vault-stat"><span>${mine.length}</span><label>owned</label></div>
+    <div class="vault-stat"><span>${totalValue}</span><label>EDEN value</label></div>
+    <div class="vault-stat"><span>${totalRarity}</span><label>living rarity</label></div>
+    <div class="vault-stat"><span>${listedCount}</span><label>listed</label></div>
+    ${owed > 0 ? `<button onclick="claimProceeds(false)" class="primary" style="grid-column:1/-1;margin-top:8px">Claim ${owed} EDEN resale proceeds</button>` : ''}`;
+
+  if (mine.length === 0) {
+    list.innerHTML = '<p style="color:var(--dim)">You own nothing yet. Buy from the Feed or claim a Drop.</p>';
+    return;
+  }
+
+  list.innerHTML = '';
+  mine.forEach(item => {
+    const card = document.createElement('div');
+    card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
+    card.innerHTML = `
+      <div class="meta">OWNED${item.coCreator ? ' • co-signed ' + item.coCreator : ''}</div>
+      <h3>${item.title}</h3>
+      <div class="intensity">👁 Surprise ${item.surprise?.toFixed(2) || '0.30'}${item.rarity ? ` · Living Rarity ${item.rarity}` : ''}</div>
+      <div class="price">${item.price} EDEN${item.forSale ? ` · LISTED @ ${item.listPrice}` : ''}</div>
+      <button onclick="playVoiceEmbodiment(${item.id})" class="ghost">Eye Embodiment</button>
+      ${item.forSale
+        ? `<button onclick="delistContent(${item.id})" class="ghost">Cancel Listing</button>`
+        : `<button onclick="listContent(${item.id})" class="primary">List for Resale</button>`}
+    `;
+    list.appendChild(card);
+  });
+}
+
+function listContent(id) {
+  const item = content.find(c => c.id === id);
+  if (!item || item.owner !== wallet) return;
+  const suggested = Math.max(1, Math.round((item.price || item.listPrice || 10) * 1.3));
+  const raw = prompt(`List "${item.title}" for resale.\nAsking price in EDEN:`, String(suggested));
+  if (raw === null) return;
+  const ask = parseInt(raw, 10);
+  if (!Number.isFinite(ask) || ask <= 0) { alert('Enter a positive EDEN price.'); return; }
+  item.forSale = true;
+  item.listPrice = ask;
+  item.seller = wallet;
+  localStorage.setItem('p8_content', JSON.stringify(content));
+  renderVault();
+  renderFeed();
+  alert(`"${item.title}" is now on the market for ${ask} EDEN.`);
+}
+
+function delistContent(id) {
+  const item = content.find(c => c.id === id);
+  if (!item || item.owner !== wallet) return;
+  delete item.forSale;
+  delete item.listPrice;
+  delete item.seller;
+  localStorage.setItem('p8_content', JSON.stringify(content));
+  renderVault();
+  renderFeed();
+}
+
 function showCodex() {
   hideSections();
   const sec = document.getElementById('codex');
   sec.classList.remove('hidden');
-  setActiveNav(3);
+  setActiveNav(4);
   
   const list = document.getElementById('codex-list');
   list.innerHTML = '';
