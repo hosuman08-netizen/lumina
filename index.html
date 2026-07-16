@@ -3,93 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eden • Web3 Artistic</title>
-  <meta name="description" content="Web3 성인 콘텐츠. Fictional artistic only. 18+ • p8 Legion.">
+  <title>Lumina • Artistic Collectibles</title>
+  <meta name="description" content="Web3 collectible gallery for fictional artistic mood pieces. 18+ only. No real people.">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <div class="container">
+  <!-- 18+ age gate: shown first, blocks the app until confirmed -->
+  <div id="age-gate" class="age-gate">
+    <div class="age-card">
+      <h1>LUMINA</h1>
+      <p class="gate-lead">A collectible gallery of fictional, artistic mood pieces.</p>
+      <div class="gate-notice">
+        <strong>18+ ONLY</strong><br>
+        All artwork is fictional and artistic. No real people are depicted.
+        This is a demo — wallets and tokens are simulated.
+      </div>
+      <p class="gate-ask">Are you 18 years of age or older?</p>
+      <div class="gate-actions">
+        <button onclick="confirmAge()" class="primary">Yes, I'm 18 or older — Enter</button>
+        <button onclick="declineAge()" class="ghost">Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="app" hidden>
     <header>
-      <div class="disclaimer">FICTIONAL ARTISTIC CONTENT ONLY • 18+ • NO REAL HUMANS • LEGION p8 × p6</div>
-      <h1>EDEN</h1>
-      <p class="tagline">Web3 Sensual Art • Voice as Breath • Limited Drops</p>
-      
+      <div class="disclaimer">FICTIONAL ARTISTIC CONTENT ONLY • 18+ • NO REAL PEOPLE • DEMO</div>
+      <h1>LUMINA</h1>
+      <p class="tagline">Artistic mood collectibles • Limited editions</p>
+
       <div class="wallet">
         <button onclick="connectWallet()" class="primary">Connect Wallet</button>
-        <div id="wallet-info">Not connected • 0 EDEN</div>
+        <div id="wallet-info">Not connected</div>
       </div>
       <div class="wallet-utils">
-        <button onclick="convertP7ToEDEN()" class="ghost">p7 Ache → EDEN Vault</button>
-        <button onclick="playEmbodiment()" class="ghost">Play Lung Eye</button>
+        <button onclick="claimStarterTokens()" class="ghost">Claim Demo Tokens</button>
       </div>
-      
+
       <nav class="nav">
-        <button onclick="showFeed()" class="nav-btn active">Feed</button>
+        <button onclick="showFeed()" class="nav-btn active">Gallery</button>
         <button onclick="showCreate()" class="nav-btn">Create</button>
         <button onclick="showDrops()" class="nav-btn">Drops</button>
-        <button onclick="showVault()" class="nav-btn">Vault</button>
-        <button onclick="showCodex()" class="nav-btn">Codex</button>
+        <button onclick="showVault()" class="nav-btn">Collection</button>
+        <button onclick="showCodex()" class="nav-btn">Journal</button>
       </nav>
     </header>
 
-    <!-- Feed -->
+    <!-- Gallery / market feed -->
     <div id="feed" class="section">
-      <h2>Artistic Feed</h2>
+      <h2>Gallery</h2>
       <div id="content-feed" class="feed-grid"></div>
     </div>
 
     <!-- Create -->
     <div id="create" class="section hidden">
-      <h2>Create Sensual Art</h2>
+      <h2>Create a Piece</h2>
       <div class="form">
         <label>Title</label>
-        <input id="art-title" placeholder="Moonlit Ache">
-        
-        <label>Voice (p6 Lung Surprise Eye)</label>
-        <button onclick="recordP6Voice()">🎙 Record with p6 Aether</button>
+        <input id="art-title" placeholder="Moonlit Study">
+
+        <label>Mood note (optional voice)</label>
+        <button onclick="recordVoice()">Record a short mood note</button>
         <div id="voice-preview"></div>
-        
-        <label>p3 Mycelial Co-Signature (companion)</label>
+
+        <label>Co-artist (optional)</label>
         <select id="companion-picker">
           <option value="">None</option>
-          <option value="Luna Whisper">Luna Whisper (p3)</option>
-          <option value="Vesper Veil">Vesper Veil (p3)</option>
-          <option value="Echo Thorn">Echo Thorn (p3)</option>
+          <option value="Luna">Luna</option>
+          <option value="Vesper">Vesper</option>
+          <option value="Echo">Echo</option>
         </select>
-        
-        <label>Intensity (0.618 Vitruvian)</label>
-        <input id="intensity" type="range" min="0" max="1" step="0.01" value="0.618">
-        
-        <label>EDEN Cost to Mint</label>
-        <input id="mint-cost" type="number" value="25">
-        
-        <button onclick="createAndMint()" class="primary">Mint as NFT (spend EDEN)</button>
+
+        <label>Intensity</label>
+        <input id="intensity" type="range" min="0" max="1" step="0.01" value="0.6">
+
+        <label>Token cost to mint</label>
+        <input id="mint-cost" type="number" value="25" min="1">
+
+        <button onclick="createAndMint()" class="primary">Mint (spend tokens)</button>
       </div>
     </div>
 
-    <!-- FOMO Drops -->
+    <!-- Limited Drops -->
     <div id="drops" class="section hidden">
-      <h2>Limited Eden Drops <span class="fomo">3 left today</span></h2>
+      <h2>Limited Drops</h2>
       <div id="drop-list"></div>
     </div>
 
-    <!-- Vault (owned collection + resale) -->
+    <!-- Collection (owned + resale) -->
     <div id="vault" class="section hidden">
-      <h2>🗝 My Vault</h2>
+      <h2>My Collection</h2>
       <div id="vault-summary" class="vault-summary"></div>
       <div id="vault-list" class="feed-grid"></div>
     </div>
 
-    <!-- Codex -->
+    <!-- Journal -->
     <div id="codex" class="section hidden">
-      <h2>📓 Personal Codex</h2>
+      <h2>Journal</h2>
       <div id="codex-list"></div>
-      <button onclick="reflect()">Reflect & Evolve</button>
+      <button onclick="reflect()">Add a Reflection</button>
     </div>
   </div>
 
-  <script src="../p6-airpods-artistic/lung-surprise-eye.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

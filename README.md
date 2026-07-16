@@ -1,40 +1,26 @@
-# p8 — Eden Web3 (Web3 성인 콘텐츠)
+# Lumina — Artistic Collectibles (Web3 demo)
 
-**Sovereign Vision**: Decentralized artistic adult content platform. Users create/consume fictional sensual experiences using Web3 (wallets, tokens, NFTs). Not real people — pure artistic/fictional.
+A client-only prototype for a collectible gallery of **fictional, artistic mood pieces**.
+Users mint, buy, resell, and reflect on artwork using simulated tokens and wallets.
 
-**Core Mechanics**:
-- **Web3**: Connect wallet (mock), EDEN tokens for access/premium. NFTs for exclusive "Eden Drops".
-- **Content**: Artistic images, voice (p6 Lung Surprise Eye integration), stories. Location optional for "near" but global.
-- **Economy**: Charge/earn EDEN. FOMO limited drops, variable rarity.
-- **p6 Cross**: Voice recording with Ache-Breath + Surprise Eye for intense "personal" content. Export voice as NFT seed.
-- **ALWAYS LEARNING**: User Notebook — reflect on experiences, evolves personal "Codex" and unlocks better matches.
-- **FOMO/Psych**: Limited daily drops, near-miss "one more token", endowment on owned NFTs, sunk cost on subscriptions.
-- **Da Vinci**: Sfumato soft sensual UI (soft glazes, mystery), Vitruvian proportion in layouts/body aesthetics, empirical observation (user feedback mutates content).
+## What it does
+- **Gallery**: browse and buy pieces (primary sales + resale listings).
+- **Create**: mint a piece with an optional short mood note (mic) and a co-artist.
+- **Drops**: limited editions with persistent, honest stock counts.
+- **Collection**: see what you own, its value and living rarity, and list pieces for resale.
+- **Journal**: reflect on pieces; reflections nudge a piece's "living rarity".
 
-**미꾸라지 (Legal Armor)**:
-- Prominent: "FICTIONAL ARTISTIC CONTENT • 18+ ONLY • NO REAL HUMANS • NOT PORNOGRAPHY".
-- Age gate + geo compliance.
-- Self-custody, no KYC for basic.
-- Fictional "Eden" universe framing.
-- Disclosure on all pricing/odds (NFT rarity).
+## Design notes
+- **18+ gate**: a real confirmation blocks the app until the visitor confirms they are 18+.
+- **Fictional & artistic only**: no real people are depicted; content is mood/atmosphere.
+- **Honest numbers**: displayed drop stock equals stored stock — no refresh-to-refill,
+  no fake scarcity. Rarity and prices shown match the underlying values.
+- **Self-contained**: no external scripts or network calls; everything runs client-side
+  with `localStorage`. Wallets and tokens are simulated.
 
-**Cross Legion**:
-- p6 voice as core sensual medium.
-- p3 companions as AI co-creators/characters.
-- p2 Pantheon lore as mythic backstories.
-- p7 coins → EDEN bridge.
-- p1 gacha as "Fate Drops".
+## Tech
+- Static HTML/CSS/JS. Deployable to any static host (e.g. GitHub Pages).
+- PWA manifest + minimal service worker stub.
 
-**Prototype**: Web first (PWA). Wallet mock, feed, voice recorder, token spend, NFT mint.
-
-**Native/Web3 Roadmap**: WalletConnect real, IPFS for content, smart contracts for drops.
-
-**Legion One. Sovereign neo. 2026-07-13**
-EOF
-## p8 births (p8 subagent)
-1. Ache-Mutated Living Rarity
-2. p3 Mycelial Co-Signature
-3. p7 Coin-Breath Vault + Voice Embodiment
-
-p6 Lung Surprise Eye now drives rarity, co-creators, embodiment, p7 bridge.
-
+## Roadmap (not implemented)
+Real wallet connect (WalletConnect), IPFS-hosted media, on-chain drops.

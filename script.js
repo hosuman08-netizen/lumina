@@ -1,35 +1,47 @@
-// p8 Eden Web3 — Legion prototype
-// p6 Lung Surprise Eye + Da Vinci + full-cheat FOMO
+// Lumina — artistic collectibles gallery (demo / prototype)
+// Fictional, artistic, 18+. Self-contained: no external scripts, client-only.
 let wallet = null;
 let edenBalance = 120;
-let content = JSON.parse(localStorage.getItem('p8_content') || '[]');
-let codex = JSON.parse(localStorage.getItem('p8_codex') || '[]');
-let drops = JSON.parse(localStorage.getItem('p8_drops') || '[]');
+let content = JSON.parse(localStorage.getItem('lumina_content') || '[]');
+let codex = JSON.parse(localStorage.getItem('lumina_journal') || '[]');
+let drops = JSON.parse(localStorage.getItem('lumina_drops') || '[]');
 
-// Persist remaining drop stock so "N remaining" is TRUE across refreshes
-// (real scarcity — displayed count === code count, no refresh exploit).
-function saveDrops() { localStorage.setItem('p8_drops', JSON.stringify(drops)); }
+// Persist remaining drop stock so "N remaining" stays TRUE across refreshes.
+// Displayed count === stored count — no refresh-to-refill, no fake scarcity.
+function saveDrops() { localStorage.setItem('lumina_drops', JSON.stringify(drops)); }
 
-const p3Companions = ['Luna Whisper', 'Vesper Veil', 'Echo Thorn']; // p3 cross
-
-function getP7Coins() {
-  return parseInt(localStorage.getItem('p7_coins') || '42');
+// ── 18+ age gate ──────────────────────────────────────────────────
+// A real gate: the app stays hidden until the user confirms 18+.
+function confirmAge() {
+  try { localStorage.setItem('lumina_age_ok', '1'); } catch (e) {}
+  revealApp();
 }
 
-function convertP7ToEDEN() {
-  let p7 = getP7Coins();
-  if (p7 < 10) { alert('Need more p7 ache credits (FOMO)'); return; }
-  const ratio = (window._p8Surprise || 0.5);
-  const converted = Math.floor(p7 * ratio * 0.8);
-  edenBalance += converted;
-  localStorage.setItem('p7_coins', '0');
+function declineAge() {
+  document.body.innerHTML =
+    '<div style="max-width:420px;margin:80px auto;padding:24px;text-align:center;' +
+    'font-family:system-ui,sans-serif;color:#f5f1e6">' +
+    '<h1 style="color:#c5a46e">Come back later</h1>' +
+    '<p style="color:#8b6f47">This gallery is for visitors 18 and older.</p></div>';
+}
+
+function revealApp() {
+  const gate = document.getElementById('age-gate');
+  const app = document.getElementById('app');
+  if (gate) gate.style.display = 'none';
+  if (app) app.hidden = false;
+  initApp();
+}
+
+function claimStarterTokens() {
+  edenBalance += 50;
   updateWalletUI();
-  alert(`p7 Ache-Breath converted ${p7} → ${converted} EDEN. Lung Vault claimed (variable ratio).`);
+  alert('50 demo tokens added to your balance.');
 }
 
 function mutateLivingRarity(item) {
   if (!item.surprise) item.surprise = 0.3;
-  // Codex ache re-injects → rarity breathes up
+  // Reflecting on a piece nudges its "living rarity" upward.
   const acheBoost = (item.ache || 0.2) * 0.4;
   item.surprise = Math.min(0.99, item.surprise * 1.1 + acheBoost);
   item.rarity = item.rarity || Math.floor((1 - item.surprise) * 10) + 1;
@@ -37,8 +49,8 @@ function mutateLivingRarity(item) {
   return item;
 }
 
-// Real p6 golden-eye overlay — draws the actual p6 Lung Surprise Eye on a canvas.
-// Used by both the header "Play Lung Eye" and per-card "Eye Embodiment".
+// Self-contained ambient overlay — a soft golden pulse tied to the piece's
+// mood value. Tap anywhere to dismiss.
 function openEyeOverlay(surprise, title) {
   const s = Math.max(0, Math.min(0.99, surprise || 0.5));
   const overlay = document.createElement('div');
@@ -46,7 +58,7 @@ function openEyeOverlay(surprise, title) {
   overlay.innerHTML = `
     <div class="eye-stage">
       <canvas width="320" height="200"></canvas>
-      <div class="eye-caption">${title ? title + ' — ' : ''}Surprise ${s.toFixed(2)}</div>
+      <div class="eye-caption">${title ? title + ' — ' : ''}Mood ${s.toFixed(2)}</div>
     </div>`;
   overlay.addEventListener('click', () => overlay.remove());
   document.body.appendChild(overlay);
@@ -57,29 +69,20 @@ function openEyeOverlay(surprise, title) {
   const draw = () => {
     if (!overlay.isConnected) return;
     ctx.clearRect(0, 0, 320, 200);
-    // breathing amplitude drives the eye — the "predimment" build-up
     const amp = 0.4 + 0.35 * Math.sin(t / 12);
-    if (window.p6LungSurpriseEye) {
-      window.p6LungSurpriseEye(ctx, 320, 100, s, amp, 0.6, window._p8Ache || 0);
-    } else {
-      // graceful fallback: a simple golden iris pulse
-      const r = 30 + amp * 22;
-      const g = ctx.createRadialGradient(160, 100, 4, 160, 100, r);
-      g.addColorStop(0, '#f5d76e'); g.addColorStop(1, 'rgba(197,164,110,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(160, 100, r, 0, Math.PI * 2); ctx.fill();
-    }
+    const r = 30 + amp * 22 * (0.6 + s * 0.6);
+    const g = ctx.createRadialGradient(160, 100, 4, 160, 100, r);
+    g.addColorStop(0, '#f5d76e');
+    g.addColorStop(1, 'rgba(197,164,110,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(160, 100, r, 0, Math.PI * 2);
+    ctx.fill();
     t++;
-    if (t < 150) requestAnimationFrame(draw); // ~2.5s ritual
+    if (t < 150) requestAnimationFrame(draw);
     else setTimeout(() => overlay.remove(), 400);
   };
   requestAnimationFrame(draw);
-}
-
-// Header "Play Lung Eye" — was an undefined dead button. Now real.
-function playEmbodiment() {
-  let surprise = window._p8Surprise;
-  if (window.getP6LungSurprise) surprise = window.getP6LungSurprise() || surprise;
-  openEyeOverlay(surprise || 0.5, 'Lung Embodiment');
 }
 
 function playVoiceEmbodiment(id) {
@@ -88,59 +91,53 @@ function playVoiceEmbodiment(id) {
   openEyeOverlay(item.surprise, item.title);
 }
 
-function initP8() {
+function initApp() {
   if (content.length === 0) {
     content = [
-      { id: 1, title: "Moonlit Ache", desc: "Sfumato breath in shadows", intensity: 0.72, price: 18, owner: null, surprise: 0.41 },
-      { id: 2, title: "Velvet Codex", desc: "Voice from p6 — unpaint the smile", intensity: 0.89, price: 45, owner: "0x..ab12", surprise: 0.67 }
+      { id: 1, title: "Moonlit Study", desc: "Soft shadows, a quiet mood", intensity: 0.72, price: 18, owner: null, surprise: 0.41 },
+      { id: 2, title: "Velvet Evening", desc: "A study in warmth and stillness", intensity: 0.89, price: 45, owner: "0x..ab12", surprise: 0.67 }
     ];
-    localStorage.setItem('p8_content', JSON.stringify(content));
+    localStorage.setItem('lumina_content', JSON.stringify(content));
   }
-  
-  // Seed FOMO drops ONCE, then persist remaining stock (no refresh-to-refill exploit)
+
+  // Seed limited drops ONCE, then persist remaining stock (no refill exploit).
   if (drops.length === 0) {
     drops = [
-      { id: 99, title: "Genesis Breath", price: 12, left: 3, total: 3, surprise: 0.81 },
-      { id: 100, title: "Anatomy of Night", price: 28, left: 1, total: 1, surprise: 0.55 }
+      { id: 99, title: "First Light", price: 12, left: 3, total: 3, surprise: 0.81 },
+      { id: 100, title: "Nightfall", price: 28, left: 1, total: 1, surprise: 0.55 }
     ];
     saveDrops();
   }
-  
+
   renderFeed();
   updateWalletUI();
   renderDrops();
-  
-  // Auto p6 link
-  if (window.getP6LungSurprise) {
-    console.log('[p8] p6 Lung Surprise Eye connected');
-  }
 }
 
 function updateWalletUI() {
   const info = document.getElementById('wallet-info');
   if (!info) return;
   if (wallet) {
-    info.innerHTML = `${wallet.slice(0,6)}... • ${edenBalance} EDEN`;
+    info.innerHTML = `${wallet.slice(0,6)}... • ${edenBalance} tokens`;
   } else {
-    info.innerHTML = 'Not connected • 120 EDEN (demo)';
+    info.innerHTML = `Not connected • ${edenBalance} tokens (demo)`;
   }
 }
 
 function connectWallet() {
-  // Mock Web3 connect
+  // Simulated wallet connect (demo only — no real Web3 calls).
   wallet = '0x' + Math.random().toString(16).slice(2, 10) + '...' + Math.random().toString(16).slice(2, 6);
-  edenBalance = 120 + Math.floor(Math.random() * 30);
   updateWalletUI();
-  alert('Wallet connected (mock). Real Web3: use WalletConnect later.');
+  alert('Wallet connected (demo). A real build would use WalletConnect.');
 }
 
 function renderFeed() {
   const grid = document.getElementById('content-feed');
   if (!grid) return;
   grid.innerHTML = '';
-  
-  // Primary (unowned) first, then resale listings; owned-and-not-listed are hidden
-  // from the market feed (they live in your Vault).
+
+  // Primary (unowned) first, then resale listings; owned-and-not-listed
+  // pieces live in your Collection, not the market feed.
   const marketItems = content.filter(item => !item.owner || item.forSale);
 
   if (marketItems.length === 0) {
@@ -158,14 +155,13 @@ function renderFeed() {
       <div class="meta">${isResale ? 'RESALE' : 'ART'} • ${item.intensity.toFixed(2)} intensity</div>
       <h3>${item.title}</h3>
       <p>${item.desc}</p>
-      <div class="intensity">👁 Surprise: ${item.surprise?.toFixed(2) || '0.3'} ${item.rarity ? `· Living Rarity ${item.rarity}` : ''}</div>
-      <div class="price">${price} EDEN</div>
-      ${item.coCreator ? `<div style="font-size:9px;opacity:0.6">Co-signed: ${item.coCreator}</div>` : ''}
+      <div class="intensity">Mood: ${item.surprise?.toFixed(2) || '0.30'} ${item.rarity ? `· Living Rarity ${item.rarity}` : ''}</div>
+      <div class="price">${price} tokens</div>
+      ${item.coCreator ? `<div style="font-size:9px;opacity:0.6">Co-artist: ${item.coCreator}</div>` : ''}
       ${isResale ? `<div style="font-size:10px;opacity:0.5">Listed by ${mine ? 'you' : item.seller}</div>` : ''}
       ${mine
         ? `<button class="ghost" disabled style="opacity:0.5;cursor:not-allowed">Your listing</button>`
-        : `<button onclick="buyContent(${item.id})" class="primary">${isResale ? 'Buy Resale' : 'Buy & Unlock'}</button>`}
-      <div class="eye-hint">p6</div>
+        : `<button onclick="buyContent(${item.id})" class="primary">${isResale ? 'Buy Resale' : 'Buy'}</button>`}
     `;
     grid.appendChild(card);
   });
@@ -187,79 +183,77 @@ function hideSections() {
   document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
 }
 
-// Reflect the current view on the nav (SENSE: consistency + live feedback)
+// Reflect the current view on the nav (consistency + live feedback).
 function setActiveNav(index) {
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
     b.classList.toggle('active', i === index);
   });
 }
 
-function recordP6Voice() {
+function recordVoice() {
   const preview = document.getElementById('voice-preview');
-  preview.innerHTML = 'Recording with p6 Lung Surprise Eye...';
-  
-  // Use p6 integration
+  preview.innerHTML = 'Recording a short mood note...';
+
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     const recorder = new MediaRecorder(stream);
     let chunks = [];
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = () => {
-      const blob = new Blob(chunks, {type:'audio/webm'});
+      const blob = new Blob(chunks, { type: 'audio/webm' });
       const url = URL.createObjectURL(blob);
-      
-      // force p6 Lung calc (da-vinci)
-      let surprise = 0.3;
-      if (window.getP6LungSurprise) surprise = window.getP6LungSurprise();
-      else if (window.p6LungSurpriseEye) surprise = Math.random() * 0.5 + 0.4;
-      
-      // store ache proxy from duration
-      window._p8Ache = Math.min(0.9, (Date.now() - (window._recStart||Date.now())) / 8000);
-      
-      preview.innerHTML = `<audio controls src="${url}"></audio><br>Surprise: ${surprise.toFixed(2)} (Ache → Breath)`;
-      
-      // Store for mint
+
+      // Derive a mood value from recording length (longer = warmer).
+      const held = Date.now() - (window._recStart || Date.now());
+      let surprise = Math.min(0.9, 0.35 + held / 8000);
+      window._p8Ache = Math.min(0.9, held / 8000);
+
+      preview.innerHTML = `<audio controls src="${url}"></audio><br>Mood: ${surprise.toFixed(2)}`;
+
       window._p8VoiceBlob = blob;
       window._p8Surprise = surprise;
-      
+
       stream.getTracks().forEach(t => t.stop());
     };
-    window._recStart = Date.now(); // real ache proxy: how long the breath is held
+    window._recStart = Date.now();
     recorder.start();
     setTimeout(() => recorder.stop(), 4200); // ~4s
   }).catch(() => {
-    preview.innerHTML = 'Voice fallback: "The ache is the art." Surprise 0.68';
+    preview.innerHTML = 'Mic unavailable — using a default mood note. Mood 0.68';
     window._p8Surprise = 0.68;
   });
 }
 
 function createAndMint() {
-  const title = document.getElementById('art-title').value || 'Untitled Ache';
+  const title = document.getElementById('art-title').value || 'Untitled Study';
   const cost = parseInt(document.getElementById('mint-cost').value);
   const intensity = parseFloat(document.getElementById('intensity').value);
   const surprise = window._p8Surprise || 0.45;
   const coCreator = document.getElementById('companion-picker') ? document.getElementById('companion-picker').value : '';
   const ache = window._p8Ache || 0.3;
-  
+
   if (!wallet) {
-    alert('Connect wallet first');
+    alert('Connect a wallet first.');
+    return;
+  }
+  if (!Number.isFinite(cost) || cost <= 0) {
+    alert('Enter a positive token cost.');
     return;
   }
   if (edenBalance < cost) {
-    alert('Not enough EDEN. FOMO — limited supply.');
+    alert('Not enough tokens. Claim demo tokens or sell a piece.');
     return;
   }
-  
+
   edenBalance -= cost;
   updateWalletUI();
-  
-  // Birth 1+2: Living Rarity + p3 Co-Sig
+
   let rarity = Math.floor((1 - surprise) * 10) + 1;
   rarity = Math.max(1, Math.min(10, rarity));
-  
+
   const newArt = {
     id: Date.now(),
     title,
-    desc: `p6 Voice • intensity ${intensity} • surprise ${surprise.toFixed(2)}${coCreator ? ' + ' + coCreator : ''}`,
+    desc: `Mood note • intensity ${intensity.toFixed(2)} • mood ${surprise.toFixed(2)}${coCreator ? ' + ' + coCreator : ''}`,
     intensity,
     price: Math.floor(cost * 0.6),
     owner: wallet,
@@ -269,20 +263,17 @@ function createAndMint() {
     ache,
     minted: Date.now()
   };
-  
-  // initial living mutation
+
   mutateLivingRarity(newArt);
-  
+
   content.unshift(newArt);
-  localStorage.setItem('p8_content', JSON.stringify(content));
-  
-  // Cross to p6
-  if (window.plantP6CrossSpore) window.plantP6CrossSpore('p8', surprise);
-  
-  alert(`Minted "${title}" as Eden NFT! Rarity ${newArt.rarity} (living)`);
+  localStorage.setItem('lumina_content', JSON.stringify(content));
+
+  alert(`Minted "${title}"! Living Rarity ${newArt.rarity}.`);
   renderFeed();
   hideSections();
   document.getElementById('feed').classList.remove('hidden');
+  setActiveNav(0);
 }
 
 function buyContent(id) {
@@ -290,27 +281,24 @@ function buyContent(id) {
   if (!item) return;
 
   const isResale = !!item.forSale;
-  // Primary sale: must be unowned. Resale: must be listed and not already yours.
   if (!isResale && item.owner) return;
   if (isResale && item.owner === wallet) return;
 
   if (!wallet) {
-    alert('Connect wallet');
+    alert('Connect a wallet.');
     return;
   }
 
   const cost = isResale ? item.listPrice : item.price;
   if (edenBalance < cost) {
-    alert('Insufficient EDEN. Limited drops create urgency.');
+    alert('Not enough tokens for this piece.');
     return;
   }
 
   edenBalance -= cost;
 
   if (isResale) {
-    // Resale transfer: seller receives EDEN, buyer takes ownership, listing clears.
-    // (Single-device demo: seller credit is recorded but paid to the same balance
-    // only if the seller is the active wallet — otherwise held as pending.)
+    // Resale transfer: buyer takes ownership, seller's proceeds are recorded.
     const paidTitle = item.title;
     const seller = item.seller;
     delete item.forSale;
@@ -324,20 +312,19 @@ function buyContent(id) {
   }
 
   mutateLivingRarity(item);
-  localStorage.setItem('p8_content', JSON.stringify(content));
+  localStorage.setItem('lumina_content', JSON.stringify(content));
 
   updateWalletUI();
   renderFeed();
 
-  // ALWAYS LEARNING + living mutate
   setTimeout(() => {
-    const reflect = confirm(`Unlocked "${item.title}" (rarity now ${item.rarity}). What did you feel? Add to Codex?`);
-    if (reflect) {
-      const note = prompt('Reflection (Da Vinci style):', 'The sfumato revealed something in me.');
+    const wantsNote = confirm(`Added "${item.title}" to your collection (rarity now ${item.rarity}). Add a note to your Journal?`);
+    if (wantsNote) {
+      const note = prompt('Your reflection:', 'The soft light stayed with me.');
       if (note) {
         codex.unshift({ title: item.title, note, surprise: item.surprise, ache: item.ache, time: Date.now() });
-        localStorage.setItem('p8_codex', JSON.stringify(codex));
-        mutateLivingRarity(item); // re-mutate on reflect
+        localStorage.setItem('lumina_journal', JSON.stringify(codex));
+        mutateLivingRarity(item);
       }
     }
   }, 800);
@@ -347,7 +334,7 @@ function renderDrops() {
   const container = document.getElementById('drop-list');
   if (!container) return;
   container.innerHTML = '';
-  
+
   drops.forEach(drop => {
     const el = document.createElement('div');
     el.className = 'card';
@@ -356,12 +343,12 @@ function renderDrops() {
     el.innerHTML = `
       <div class="meta">LIMITED DROP${drop.total ? ` • ${claimed}/${drop.total} minted` : ''}</div>
       <h3>${drop.title}</h3>
-      <div class="price">${drop.price} EDEN</div>
-      <div class="fomo">${soldOut ? 'SOLD OUT' : `${drop.left} remaining • ends soon`}</div>
+      <div class="price">${drop.price} tokens</div>
+      <div class="fomo">${soldOut ? 'SOLD OUT' : `${drop.left} of ${drop.total} remaining`}</div>
       ${soldOut
         ? `<button class="ghost" disabled style="opacity:0.5;cursor:not-allowed">Sold Out</button>`
         : `<button onclick="claimDrop(${drop.id})" class="primary">Claim</button>`}
-      <div class="eye-hint">Surprise ${drop.surprise}</div>
+      <div class="eye-hint">Mood ${drop.surprise}</div>
     `;
     container.appendChild(el);
   });
@@ -375,55 +362,55 @@ function showDrops() {
 
 function claimDrop(id) {
   const drop = drops.find(d => d.id === id);
-  if (!drop || drop.left <= 0 || !wallet) return;
-  
+  if (!drop) return;
+  if (!wallet) { alert('Connect a wallet.'); return; }
+  if (drop.left <= 0) { alert('This drop is sold out.'); return; }
+
   if (edenBalance < drop.price) {
-    alert('Not enough. Scarcity is the point.');
+    alert('Not enough tokens for this drop.');
     return;
   }
-  
+
   edenBalance -= drop.price;
   drop.left--;
   saveDrops();
   updateWalletUI();
-  
+
   const newNFT = {
     id: Date.now(),
     title: drop.title,
-    desc: `Genesis Drop • surprise ${drop.surprise}`,
+    desc: `Limited drop • mood ${drop.surprise}`,
     intensity: drop.surprise,
-    price: drop.price * 1.5,
+    price: Math.round(drop.price * 1.5),
     owner: wallet,
     surprise: drop.surprise,
     minted: Date.now()
   };
   content.unshift(newNFT);
-  localStorage.setItem('p8_content', JSON.stringify(content));
-  
-  alert(`Claimed ${drop.title}! Near-miss avoided.`);
+  localStorage.setItem('lumina_content', JSON.stringify(content));
+
+  alert(`Claimed "${drop.title}"!`);
   renderFeed();
   renderDrops();
 }
 
-// ── Vault: the real "own" payoff + resale market loop ──────────────
-// Owning now means: a portfolio you can see, value, and RE-LIST for sale.
-// buy → own → list → someone buys → they own. A real market, not a dead-end.
+// ── Collection: owned pieces + resale market loop ──────────────────
+// Owning means a portfolio you can see, value, and re-list for sale.
 
 function ownedByMe() {
   if (!wallet) return [];
   return content.filter(c => c.owner === wallet);
 }
 
-// Seller proceeds ledger (per wallet address). On a single device the seller is
-// usually offline, so EDEN is escrowed to their address and claimable when that
-// wallet reconnects — a real, honest transfer of value, not a fake number.
-let proceeds = JSON.parse(localStorage.getItem('p8_proceeds') || '{}');
+// Seller proceeds ledger (per wallet address). On a single device the seller
+// is usually offline, so tokens are escrowed to their address and claimable
+// when that wallet reconnects — an honest transfer, not a fake number.
+let proceeds = JSON.parse(localStorage.getItem('lumina_proceeds') || '{}');
 
 function recordSellerProceeds(seller, amount, title) {
   if (!seller || !amount) return;
   proceeds[seller] = (proceeds[seller] || 0) + amount;
-  localStorage.setItem('p8_proceeds', JSON.stringify(proceeds));
-  // If the seller happens to be the active wallet, pay immediately.
+  localStorage.setItem('lumina_proceeds', JSON.stringify(proceeds));
   if (seller === wallet) claimProceeds(true);
 }
 
@@ -433,10 +420,10 @@ function claimProceeds(silent) {
   if (owed <= 0) { if (!silent) alert('No resale proceeds to claim.'); return; }
   edenBalance += owed;
   proceeds[wallet] = 0;
-  localStorage.setItem('p8_proceeds', JSON.stringify(proceeds));
+  localStorage.setItem('lumina_proceeds', JSON.stringify(proceeds));
   updateWalletUI();
   renderVault();
-  if (!silent) alert(`Claimed ${owed} EDEN in resale proceeds.`);
+  if (!silent) alert(`Claimed ${owed} tokens in resale proceeds.`);
 }
 
 function showVault() {
@@ -465,13 +452,13 @@ function renderVault() {
 
   summary.innerHTML = `
     <div class="vault-stat"><span>${mine.length}</span><label>owned</label></div>
-    <div class="vault-stat"><span>${totalValue}</span><label>EDEN value</label></div>
+    <div class="vault-stat"><span>${totalValue}</span><label>token value</label></div>
     <div class="vault-stat"><span>${totalRarity}</span><label>living rarity</label></div>
     <div class="vault-stat"><span>${listedCount}</span><label>listed</label></div>
-    ${owed > 0 ? `<button onclick="claimProceeds(false)" class="primary" style="grid-column:1/-1;margin-top:8px">Claim ${owed} EDEN resale proceeds</button>` : ''}`;
+    ${owed > 0 ? `<button onclick="claimProceeds(false)" class="primary" style="grid-column:1/-1;margin-top:8px">Claim ${owed} tokens resale proceeds</button>` : ''}`;
 
   if (mine.length === 0) {
-    list.innerHTML = '<p style="color:var(--dim)">You own nothing yet. Buy from the Feed or claim a Drop.</p>';
+    list.innerHTML = '<p style="color:var(--dim)">You own nothing yet. Buy from the Gallery or claim a Drop.</p>';
     return;
   }
 
@@ -480,11 +467,11 @@ function renderVault() {
     const card = document.createElement('div');
     card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
     card.innerHTML = `
-      <div class="meta">OWNED${item.coCreator ? ' • co-signed ' + item.coCreator : ''}</div>
+      <div class="meta">OWNED${item.coCreator ? ' • co-artist ' + item.coCreator : ''}</div>
       <h3>${item.title}</h3>
-      <div class="intensity">👁 Surprise ${item.surprise?.toFixed(2) || '0.30'}${item.rarity ? ` · Living Rarity ${item.rarity}` : ''}</div>
-      <div class="price">${item.price} EDEN${item.forSale ? ` · LISTED @ ${item.listPrice}` : ''}</div>
-      <button onclick="playVoiceEmbodiment(${item.id})" class="ghost">Eye Embodiment</button>
+      <div class="intensity">Mood ${item.surprise?.toFixed(2) || '0.30'}${item.rarity ? ` · Living Rarity ${item.rarity}` : ''}</div>
+      <div class="price">${item.price} tokens${item.forSale ? ` · LISTED @ ${item.listPrice}` : ''}</div>
+      <button onclick="playVoiceEmbodiment(${item.id})" class="ghost">View Ambient</button>
       ${item.forSale
         ? `<button onclick="delistContent(${item.id})" class="ghost">Cancel Listing</button>`
         : `<button onclick="listContent(${item.id})" class="primary">List for Resale</button>`}
@@ -497,17 +484,17 @@ function listContent(id) {
   const item = content.find(c => c.id === id);
   if (!item || item.owner !== wallet) return;
   const suggested = Math.max(1, Math.round((item.price || item.listPrice || 10) * 1.3));
-  const raw = prompt(`List "${item.title}" for resale.\nAsking price in EDEN:`, String(suggested));
+  const raw = prompt(`List "${item.title}" for resale.\nAsking price in tokens:`, String(suggested));
   if (raw === null) return;
   const ask = parseInt(raw, 10);
-  if (!Number.isFinite(ask) || ask <= 0) { alert('Enter a positive EDEN price.'); return; }
+  if (!Number.isFinite(ask) || ask <= 0) { alert('Enter a positive token price.'); return; }
   item.forSale = true;
   item.listPrice = ask;
   item.seller = wallet;
-  localStorage.setItem('p8_content', JSON.stringify(content));
+  localStorage.setItem('lumina_content', JSON.stringify(content));
   renderVault();
   renderFeed();
-  alert(`"${item.title}" is now on the market for ${ask} EDEN.`);
+  alert(`"${item.title}" is now on the market for ${ask} tokens.`);
 }
 
 function delistContent(id) {
@@ -516,7 +503,7 @@ function delistContent(id) {
   delete item.forSale;
   delete item.listPrice;
   delete item.seller;
-  localStorage.setItem('p8_content', JSON.stringify(content));
+  localStorage.setItem('lumina_content', JSON.stringify(content));
   renderVault();
   renderFeed();
 }
@@ -526,30 +513,29 @@ function showCodex() {
   const sec = document.getElementById('codex');
   sec.classList.remove('hidden');
   setActiveNav(4);
-  
+
   const list = document.getElementById('codex-list');
   list.innerHTML = '';
-  
+
   if (codex.length === 0) {
-    list.innerHTML = '<p>Unlock content and reflect. ALWAYS LEARNING.</p>';
+    list.innerHTML = '<p>Collect a piece and add a reflection. Your notes live here.</p>';
     return;
   }
-  
+
   codex.forEach(entry => {
     const el = document.createElement('div');
     el.className = 'codex-entry';
-    el.innerHTML = `<strong>${entry.title}</strong><br>${entry.note}<br><small>surprise ${entry.surprise} • ${new Date(entry.time).toLocaleDateString()}</small>`;
+    el.innerHTML = `<strong>${entry.title}</strong><br>${entry.note}<br><small>mood ${entry.surprise} • ${new Date(entry.time).toLocaleDateString()}</small>`;
     list.appendChild(el);
   });
 }
 
 function reflect() {
-  const note = prompt('What did this experience reveal? (Notebook entry)');
+  const note = prompt('What did this piece bring up for you?');
   if (note) {
     const last = codex[0];
-    codex.unshift({ title: 'Personal Reflection', note, surprise: 0.5, time: Date.now() });
-    localStorage.setItem('p8_codex', JSON.stringify(codex));
-    // if last owned, mutate its rarity
+    codex.unshift({ title: 'Reflection', note, surprise: 0.5, time: Date.now() });
+    localStorage.setItem('lumina_journal', JSON.stringify(codex));
     const owned = content.find(c => c.owner && c.title === (last && last.title));
     if (owned) mutateLivingRarity(owned);
     showCodex();
@@ -557,9 +543,10 @@ function reflect() {
   }
 }
 
-window.onload = initP8;
-
-// Mock for p6 cross
-if (window.exportP6VoiceSeed) {
-  console.log('[p8] p6 export available for cross');
-}
+// On load: show the age gate, or skip straight to the app if already confirmed.
+window.onload = function () {
+  let ok = false;
+  try { ok = localStorage.getItem('lumina_age_ok') === '1'; } catch (e) {}
+  if (ok) revealApp();
+  // Otherwise the age gate stays visible (default markup) until confirmed.
+};
