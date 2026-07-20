@@ -1,113 +1,27 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lumina • Artistic Collectibles</title>
-  <meta name="description" content="Web3 collectible gallery for fictional artistic mood pieces. 18+ only. No real people.">
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
-  <!-- 18+ age gate: shown first, blocks the app until confirmed -->
-  <div id="age-gate" class="age-gate">
-    <div class="age-card">
-      <h1>LUMINA</h1>
-      <p class="gate-lead">A collectible gallery of fictional, artistic mood pieces.</p>
-      <div class="gate-notice">
-        <strong>18+ ONLY</strong><br>
-        All artwork is fictional and artistic. No real people are depicted.
-        This is a demo — wallets and tokens are simulated.
-      </div>
-      <p class="gate-ask">Are you 18 years of age or older?</p>
-      <div class="gate-actions">
-        <button onclick="confirmAge()" class="primary">Yes, I'm 18 or older — Enter</button>
-        <button onclick="declineAge()" class="ghost">Leave</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container" id="app" hidden>
-    <header>
-      <div class="disclaimer">FICTIONAL ARTISTIC CONTENT ONLY • 18+ • NO REAL PEOPLE • DEMO</div>
-      <h1>LUMINA</h1>
-      <p class="tagline">Artistic mood collectibles • Limited editions</p>
-
-      <div class="wallet">
-        <button onclick="connectWallet()" class="primary">Connect Wallet</button>
-        <div id="wallet-info">Not connected</div>
-      </div>
-      <div class="wallet-utils">
-        <button onclick="claimStarterTokens()" class="ghost">Claim Demo Tokens</button>
-      </div>
-
-      <nav class="nav">
-        <button onclick="showFeed()" class="nav-btn active">Gallery</button>
-        <button onclick="showCreate()" class="nav-btn">Create</button>
-        <button onclick="showDrops()" class="nav-btn">Drops</button>
-        <button onclick="showVault()" class="nav-btn">Collection</button>
-        <button onclick="showCodex()" class="nav-btn">Journal</button>
-      </nav>
-    </header>
-
-    <!-- Gallery / market feed -->
-    <div id="feed" class="section">
-      <h2>Gallery</h2>
-      <div id="content-feed" class="feed-grid"></div>
-    </div>
-
-    <!-- Create -->
-    <div id="create" class="section hidden">
-      <h2>Create a Piece</h2>
-      <div class="form">
-        <label>Title</label>
-        <input id="art-title" placeholder="Moonlit Study">
-
-        <label>Mood note (optional voice)</label>
-        <button onclick="recordVoice()">Record a short mood note</button>
-        <div id="voice-preview"></div>
-
-        <label>Co-artist (optional)</label>
-        <select id="companion-picker">
-          <option value="">None</option>
-          <option value="Luna">Luna</option>
-          <option value="Vesper">Vesper</option>
-          <option value="Echo">Echo</option>
-        </select>
-
-        <label>Intensity</label>
-        <input id="intensity" type="range" min="0" max="1" step="0.01" value="0.6">
-
-        <label>Token cost to mint</label>
-        <input id="mint-cost" type="number" value="25" min="1">
-
-        <button onclick="createAndMint()" class="primary">Mint (spend tokens)</button>
-      </div>
-    </div>
-
-    <!-- Limited Drops -->
-    <div id="drops" class="section hidden">
-      <h2>Limited Drops</h2>
-      <div id="drop-list"></div>
-    </div>
-
-    <!-- Collection (owned + resale) -->
-    <div id="vault" class="section hidden">
-      <h2>My Collection</h2>
-      <div id="vault-summary" class="vault-summary"></div>
-      <div id="vault-list" class="feed-grid"></div>
-    </div>
-
-    <!-- Journal -->
-    <div id="codex" class="section hidden">
-      <h2>Journal</h2>
-      <div id="codex-list"></div>
-      <button onclick="reflect()">Add a Reflection</button>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-<script>window.LEGION_APP='lumina';window.LEGION_ANALYTICS_URL='https://legion-analytics.hoyashi95.workers.dev';</script>
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Adult Portal 18+</title>
+<style>
+body{margin:0;background:#0b0a10;color:#ece8f1;font-family:system-ui;max-width:440px;margin:0 auto;padding:20px}
+h1{color:#f472b6} .card{background:#15131d;border:1px solid #2a2438;border-radius:14px;padding:14px;margin:10px 0}
+a{color:#e0b552;display:block;margin:8px 0;text-decoration:none} .sub{color:#8a8398;font-size:12px}
+</style></head><body>
+<p class="sub">18+ · Fictional entertainment hub · 실결제/실관계 아님</p>
+<h1>Adult Portal 18+</h1>
+<div class="card"><b>연령 확인</b><p class="sub">계속하면 18세 이상으로 간주합니다.</p>
+<button id="ok" style="width:100%;padding:12px;border:0;border-radius:10px;background:#f472b6;color:#111;font-weight:800">18+ 입장</button></div>
+<div class="card" id="links" style="display:none">
+<a href="https://hosuman08-netizen.github.io/ai-companion/">AI Companion</a>
+<a href="https://hosuman08-netizen.github.io/soft-paywall/">Soft Paywall</a>
+<a href="https://hosuman08-netizen.github.io/exclusive-drop/">Exclusive Drop</a>
+<a href="https://hosuman08-netizen.github.io/idol-card/">Idol Card</a>
+<a href="https://hosuman08-netizen.github.io/romance-quest/">Romance Quest</a>
+<a href="https://hosuman08-netizen.github.io/legion-hub/">← Arcade</a>
+</div>
+<footer class="sub" style="text-align:center;margin-top:20px">미꾸라지: layered 18+ · fictional only</footer>
+<script>
+document.getElementById('ok').onclick=function(){document.getElementById('links').style.display='block';try{legionTrack&&legionTrack('activate',{age:18})}catch(e){}};
+window.LEGION_APP='web3-adult';
+</script>
 <script src="legion-beacon.js"></script>
-</body>
-</html>
+</body></html>
