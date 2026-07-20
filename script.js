@@ -1,3 +1,6 @@
+
+/* LEGION_WAVE_44_today_counter */
+try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw_p8_web3_adul_today_counter')||'{}');if(_o.d!==_dk)_o={d:_dk,n:0};_o.n=(_o.n||0)+1;localStorage.setItem('lw_p8_web3_adul_today_counter',JSON.stringify(_o));}catch(e){}
 // Lumina — artistic collectibles gallery (demo / prototype)
 // Fictional, artistic, 18+. Self-contained: no external scripts, client-only.
 let wallet = null;
