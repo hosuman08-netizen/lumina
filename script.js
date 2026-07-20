@@ -49,6 +49,124 @@ function mutateLivingRarity(item) {
   return item;
 }
 
+// ── Generative artwork ────────────────────────────────────────────
+// Every piece renders a unique, deterministic image seeded by its id +
+// mood. Same piece → same art, always (no random flicker, honest).
+// Purely abstract soft colour fields — fictional, artistic, SFW.
+function pieceSeed(item) {
+  // Stable 32-bit seed from id + mood values.
+  let h = 2166136261 >>> 0;
+  const str = String(item.id) + '|' + (item.surprise || 0.3) + '|' + (item.intensity || 0.5);
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+// Small seeded PRNG (mulberry32) — deterministic per seed.
+function seededRand(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Rarity tier name + class from a numeric rarity (higher = rarer).
+// Tiers are honest: derived straight from the piece's stored rarity.
+function rarityTier(rarity) {
+  const r = rarity || 1;
+  if (r >= 12) return { name: 'Mythic', cls: 't-mythic' };
+  if (r >= 8)  return { name: 'Radiant', cls: 't-radiant' };
+  if (r >= 5)  return { name: 'Rare', cls: '' };
+  if (r >= 3)  return { name: 'Fine', cls: '' };
+  return { name: 'Study', cls: '' };
+}
+
+// Paint a piece into a canvas: layered soft radial fields + a drifting
+// horizon line. Warmer/brighter as mood (surprise) rises.
+function paintPiece(canvas, item) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const rnd = seededRand(pieceSeed(item));
+  const mood = Math.max(0, Math.min(0.99, item.surprise || 0.3));
+  const intensity = Math.max(0, Math.min(1, item.intensity || 0.5));
+
+  // Base wash — deep warm ground, hue shifts subtly with mood.
+  const baseHue = 24 + rnd() * 26;            // amber → rose range
+  const g0 = ctx.createLinearGradient(0, 0, 0, H);
+  g0.addColorStop(0, `hsl(${baseHue}, ${18 + mood * 22}%, ${5 + mood * 4}%)`);
+  g0.addColorStop(1, `hsl(${baseHue + 8}, ${14 + mood * 16}%, ${3 + mood * 2}%)`);
+  ctx.fillStyle = g0;
+  ctx.fillRect(0, 0, W, H);
+
+  // Soft light pools — count/warmth scale with mood.
+  const pools = 2 + Math.floor(mood * 3);
+  for (let i = 0; i < pools; i++) {
+    const x = rnd() * W, y = rnd() * H * 0.9;
+    const r = (0.18 + rnd() * 0.4) * W * (0.7 + intensity * 0.5);
+    const hue = baseHue + (rnd() - 0.5) * 30;
+    const light = 45 + mood * 28;
+    const alpha = 0.10 + mood * 0.22;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `hsla(${hue}, 70%, ${light}%, ${alpha})`);
+    g.addColorStop(1, `hsla(${hue}, 70%, ${light}%, 0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // A single drifting horizon — the "one novel element", gives each
+  // piece a spine without clutter.
+  const hy = H * (0.42 + rnd() * 0.28);
+  const lg = ctx.createLinearGradient(0, hy - 2, 0, hy + 2);
+  const glow = `hsla(45, 90%, ${60 + mood * 20}%, ${0.25 + mood * 0.4})`;
+  lg.addColorStop(0, 'hsla(45,90%,70%,0)');
+  lg.addColorStop(0.5, glow);
+  lg.addColorStop(1, 'hsla(45,90%,70%,0)');
+  ctx.fillStyle = lg;
+  ctx.save();
+  ctx.translate(0, (rnd() - 0.5) * 6);
+  ctx.fillRect(0, hy - 3, W, 6);
+  ctx.restore();
+
+  // Fine grain so it reads as a crafted image, not a flat gradient.
+  const grains = 90 + Math.floor(intensity * 90);
+  for (let i = 0; i < grains; i++) {
+    ctx.fillStyle = `hsla(${baseHue}, 60%, ${70 + rnd() * 20}%, ${0.02 + rnd() * 0.05})`;
+    ctx.fillRect(rnd() * W, rnd() * H, 1.2, 1.2);
+  }
+
+  // Vignette to frame the eye toward centre.
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// Build an <div.art-frame> with a painted canvas + tier ribbon for a piece.
+function artFrameHTML(item) {
+  const tier = rarityTier(item.rarity);
+  return `<div class="art-frame" data-art="${item.id}">
+      <canvas width="300" height="200"></canvas>
+      <div class="art-tier ${tier.cls}">${tier.name}${item.rarity ? ' · Lv ' + item.rarity : ''}</div>
+    </div>`;
+}
+
+// After a grid renders, paint every art-frame canvas from its piece.
+function paintAllFrames(scope) {
+  (scope || document).querySelectorAll('.art-frame[data-art]').forEach(frame => {
+    const id = frame.getAttribute('data-art');
+    const item = content.find(c => String(c.id) === id)
+      || drops.find(d => String(d.id) === id);
+    const canvas = frame.querySelector('canvas');
+    if (item && canvas) paintPiece(canvas, item);
+  });
+}
+
 // Self-contained ambient overlay — a soft golden pulse tied to the piece's
 // mood value. Tap anywhere to dismiss.
 function openEyeOverlay(surprise, title) {
@@ -152,6 +270,7 @@ function renderFeed() {
     const card = document.createElement('div');
     card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
     card.innerHTML = `
+      ${artFrameHTML(item)}
       <div class="meta">${isResale ? 'RESALE' : 'ART'} • ${item.intensity.toFixed(2)} intensity</div>
       <h3>${item.title}</h3>
       <p>${item.desc}</p>
@@ -165,6 +284,8 @@ function renderFeed() {
     `;
     grid.appendChild(card);
   });
+
+  paintAllFrames(grid);
 }
 
 function showFeed() {
@@ -341,6 +462,7 @@ function renderDrops() {
     const soldOut = drop.left <= 0;
     const claimed = (drop.total || 0) - drop.left;
     el.innerHTML = `
+      ${artFrameHTML(drop)}
       <div class="meta">LIMITED DROP${drop.total ? ` • ${claimed}/${drop.total} minted` : ''}</div>
       <h3>${drop.title}</h3>
       <div class="price">${drop.price} tokens</div>
@@ -352,6 +474,8 @@ function renderDrops() {
     `;
     container.appendChild(el);
   });
+
+  paintAllFrames(container);
 }
 
 function showDrops() {
@@ -467,6 +591,7 @@ function renderVault() {
     const card = document.createElement('div');
     card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
     card.innerHTML = `
+      ${artFrameHTML(item)}
       <div class="meta">OWNED${item.coCreator ? ' • co-artist ' + item.coCreator : ''}</div>
       <h3>${item.title}</h3>
       <div class="intensity">Mood ${item.surprise?.toFixed(2) || '0.30'}${item.rarity ? ` · Living Rarity ${item.rarity}` : ''}</div>
@@ -478,6 +603,8 @@ function renderVault() {
     `;
     list.appendChild(card);
   });
+
+  paintAllFrames(list);
 }
 
 function listContent(id) {

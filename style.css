@@ -52,6 +52,30 @@ button.ghost:hover { color: var(--gold); }
   transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 .card:hover { border-color: var(--dim); }
+
+/* Piece artwork — each collectible's unique generative image.
+   Deterministic (seeded by id + mood) so a piece always looks the same. */
+.art-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #0a0806;
+  box-shadow: inset 0 0 0 1px rgba(197,164,110,0.14);
+}
+.art-frame canvas { display: block; width: 100%; height: 100%; }
+/* rarity tier ribbon sits over the artwork's corner */
+.art-tier {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 9px; letter-spacing: 1px; font-weight: 600;
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(10,8,6,0.72); backdrop-filter: blur(2px);
+  color: var(--gold); text-transform: uppercase;
+}
+.art-tier.t-mythic { color: #0a0806; background: var(--accent); }
+.art-tier.t-radiant { color: var(--accent); box-shadow: inset 0 0 0 1px rgba(245,215,110,0.5); }
 /* sfumato: soft edge halo on the frame, NOT blur on the text (readability) */
 .card.sfu { box-shadow: inset 0 0 24px rgba(197,164,110,0.08), 0 0 16px rgba(0,0,0,0.4); }
 .card h3 { margin: 0 0 8px; font-size: 18px; color: var(--text); }
