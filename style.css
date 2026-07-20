@@ -18,7 +18,7 @@ h1 { font-size: 40px; letter-spacing: -2px; color: var(--gold); margin: 0 0 4px;
 
 .wallet { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
 .wallet .primary { flex: 0 0 auto; }
-#wallet-info { flex: 1; font-family: monospace; font-size: 12px; color: var(--dim); background: var(--card); padding: 8px; border-radius: 8px; }
+#wallet-info { flex: 1; font-size: 12px; letter-spacing: 0.2px; color: var(--dim); background: var(--card); padding: 8px; border-radius: 8px; }
 .wallet-utils { display: flex; gap: 8px; margin-bottom: 24px; }
 
 /* Button system — one hero per view (primary), everything else quiet */
@@ -94,6 +94,34 @@ button.ghost:hover { color: var(--gold); }
 .form input:focus, .form select:focus { outline: none; border-color: var(--gold); }
 .form button { width: 100%; margin-bottom: 8px; }
 .form .primary { margin-top: 16px; }
+
+/* Range slider — brand gold, not the default browser blue */
+.form input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  padding: 0; background: transparent; border: none;
+  height: 24px; cursor: pointer;
+}
+.form input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px; background: #2a2419;
+}
+.form input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 999px; background: #2a2419;
+}
+.form input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; margin-top: -7px; border-radius: 50%;
+  background: var(--gold); border: none;
+  box-shadow: 0 0 0 4px rgba(197,164,110,0.18);
+  transition: background 160ms ease-out, box-shadow 160ms ease-out;
+}
+.form input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--gold); border: none;
+  box-shadow: 0 0 0 4px rgba(197,164,110,0.18);
+}
+.form input[type="range"]:hover::-webkit-slider-thumb { background: var(--accent); }
+.form input[type="range"]:hover::-moz-range-thumb { background: var(--accent); }
+.form input[type="range"]:focus { outline: none; }
 
 .fomo { color: #f87171; font-size: 11px; }
 
