@@ -399,6 +399,9 @@ function createAndMint() {
   content.unshift(newArt);
   localStorage.setItem('lumina_content', JSON.stringify(content));
 
+  // Core loop completed: visitor minted their own piece (representative "used the app" action).
+  if (window.legionTrack) window.legionTrack('activate');
+
   alert(`Minted "${title}"! Living Rarity ${newArt.rarity}.`);
   renderFeed();
   hideSections();
