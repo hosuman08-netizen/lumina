@@ -262,6 +262,7 @@ function connectWallet() {
 }
 
 function renderFeed() {
+  try{renderLuLoop();}catch(e){}
   const grid = document.getElementById('content-feed');
   if (!grid) return;
   grid.innerHTML = '';
@@ -356,7 +357,46 @@ function recordVoice() {
   });
 }
 
+
+function luDayKey(off){const d=new Date();d.setDate(d.getDate()+(off||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function bumpLuStreak(kind){
+  try{
+    let st=JSON.parse(localStorage.getItem('lu_streak')||'{}');
+    const t0=luDayKey(0);
+    if(st.last!==t0){
+      const y=luDayKey(-1),y2=luDayKey(-2);
+      if(st.last&&st.last!==y&&st.last===y2&&(st.count||0)>=3){
+        const ready=!st.shieldLast||((new Date(t0)-new Date(st.shieldLast))/86400000)>=7;
+        if(ready){st.shieldLast=t0;st.last=y;}
+      }
+      st.count=(st.last===y)?(st.count||0)+1:1; st.last=t0;
+      localStorage.setItem('lu_streak',JSON.stringify(st));
+      try{legionTrack('streak',{count:st.count})}catch(e){}
+    }
+    const k='lu_day_'+t0; let day=JSON.parse(localStorage.getItem(k)||'{"mints":0}');
+    day.mints=(day.mints||0)+1; localStorage.setItem(k,JSON.stringify(day));
+    renderLuLoop();
+  }catch(e){}
+}
+function renderLuLoop(){
+  try{
+    let el=document.getElementById('luLoop');
+    if(!el){ el=document.createElement('div'); el.id='luLoop';
+      el.style.cssText='margin:8px 12px;padding:10px;border:1px solid #f472b644;border-radius:12px;font-size:12px;display:flex;flex-wrap:wrap;gap:8px;background:#16121c';
+      const host=document.querySelector('header')||document.querySelector('h1')||document.body;
+      host.insertAdjacentElement('afterend', el);
+    }
+    const st=JSON.parse(localStorage.getItem('lu_streak')||'{}');
+    const day=JSON.parse(localStorage.getItem('lu_day_'+luDayKey(0))||'{}');
+    const end=new Date(); end.setHours(24,0,0,0);
+    const ms=Math.max(0,end-Date.now());
+    const clock=Math.floor(ms/3600000)+'h '+Math.floor((ms%3600000)/60000)+'m';
+    el.innerHTML='🔥 '+(st.count||0)+'d · today mints '+(day.mints||0)+' · reset '+clock+' · <span style="opacity:.7">18+ fictional · no cash value</span>';
+  }catch(e){}
+}
+
 function createAndMint() {
+  try{bumpLuStreak('mint');}catch(e){}
   const title = document.getElementById('art-title').value || 'Untitled Study';
   const cost = parseInt(document.getElementById('mint-cost').value);
   const intensity = parseFloat(document.getElementById('intensity').value);
@@ -706,3 +746,5 @@ window.onload = function () {
 
 /* LEGION_WAVE_89_fomo_chip */
 setTimeout(function(){try{if(document.getElementById('lw_fomo_89'))return;var end=new Date(); end.setHours(24,0,0,0);var ms=Math.max(0,end-Date.now());var h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000);var d=document.createElement('div'); d.id='lw_fomo_89';d.style.cssText='font-size:11px;opacity:.75;margin:6px 0;color:#e0b552';d.textContent='window '+h+'h '+m+'m · W89';var app=document.getElementById('app')||document.body; app.insertBefore(d, app.firstChild);}catch(e){}},40);
+
+try{ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', renderLuLoop); else setTimeout(renderLuLoop,80); }catch(e){}
