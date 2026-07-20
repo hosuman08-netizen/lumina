@@ -109,6 +109,7 @@ button.ghost:hover { color: var(--gold); }
 .vault-stat span { display: block; font-size: 22px; font-weight: 600; color: var(--gold); line-height: 1; }
 .vault-stat label { display: block; font-size: 10px; color: var(--dim); margin-top: 6px; letter-spacing: 0.4px; }
 .vault-summary button { grid-column: 1 / -1; }
+.vault-hint { grid-column: 1 / -1; color: var(--dim); font-size: 12px; margin: 0 0 4px; opacity: 0.8; }
 @media (max-width: 360px) { .vault-summary { grid-template-columns: repeat(2, 1fr); } }
 
 .codex-entry {

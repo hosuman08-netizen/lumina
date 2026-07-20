@@ -42,10 +42,19 @@ function claimStarterTokens() {
 function mutateLivingRarity(item) {
   if (!item.surprise) item.surprise = 0.3;
   // Reflecting on a piece nudges its "living rarity" upward.
+  const beforeRarity = item.rarity || Math.floor((1 - item.surprise) * 10) + 1;
+  const beforeTier = rarityTier(beforeRarity).name;
   const acheBoost = (item.ache || 0.2) * 0.4;
   item.surprise = Math.min(0.99, item.surprise * 1.1 + acheBoost);
   item.rarity = item.rarity || Math.floor((1 - item.surprise) * 10) + 1;
   item.rarity = Math.max(1, Math.floor(item.rarity * (1 + (item.surprise - 0.3) * 0.5)));
+  // Transient signal so callers can celebrate a tier promotion. Defined
+  // non-enumerable so JSON.stringify never persists it into localStorage.
+  const promoted = rarityTier(item.rarity).name !== beforeTier
+    ? rarityTier(item.rarity).name : null;
+  Object.defineProperty(item, '_tierUp', {
+    value: promoted, enumerable: false, configurable: true, writable: true
+  });
   return item;
 }
 
@@ -433,19 +442,30 @@ function buyContent(id) {
   }
 
   mutateLivingRarity(item);
+  const boughtTierUp = item._tierUp;
   localStorage.setItem('lumina_content', JSON.stringify(content));
 
   updateWalletUI();
   renderFeed();
 
   setTimeout(() => {
-    const wantsNote = confirm(`Added "${item.title}" to your collection (rarity now ${item.rarity}). Add a note to your Journal?`);
+    const tier = rarityTier(item.rarity).name;
+    const promo = boughtTierUp ? `It rose to ${boughtTierUp}. ` : '';
+    const wantsNote = confirm(
+      `Added "${item.title}" to your collection — ${tier} · Lv ${item.rarity}. ${promo}` +
+      `Reflecting on a piece in your Journal deepens its living rarity. Add a note now?`);
     if (wantsNote) {
       const note = prompt('Your reflection:', 'The soft light stayed with me.');
       if (note) {
         codex.unshift({ title: item.title, note, surprise: item.surprise, ache: item.ache, time: Date.now() });
         localStorage.setItem('lumina_journal', JSON.stringify(codex));
         mutateLivingRarity(item);
+        const reflectTierUp = item._tierUp;
+        localStorage.setItem('lumina_content', JSON.stringify(content));
+        renderFeed();
+        if (reflectTierUp) {
+          setTimeout(() => alert(`Your reflection deepened "${item.title}" to ${reflectTierUp}.`), 300);
+        }
       }
     }
   }, 800);
@@ -586,7 +606,7 @@ function renderVault() {
     return;
   }
 
-  list.innerHTML = '';
+  list.innerHTML = '<p class="vault-hint">Add a reflection in your Journal to deepen a piece’s living rarity.</p>';
   mine.forEach(item => {
     const card = document.createElement('div');
     card.className = `card ${item.surprise > 0.5 ? 'sfu' : ''}`;
